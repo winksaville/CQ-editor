@@ -191,11 +191,12 @@ class Debugger(QObject,ComponentMixin):
         cq_objects = {}
         
         def _show_object(obj,name=None, options={}):
-
+            print(f"ce: _show_object:+ str(id(obj))={str(id(obj))} name={name} options={options}")
             if name:
                 cq_objects.update({name : SimpleNamespace(shape=obj,options=options)})
             else:
                 cq_objects.update({str(id(obj)) : SimpleNamespace(shape=obj,options=options)})
+            print(f"ce: _show_object:- str(id(obj))={str(id(obj))} name={name} options={options}")
                 
         def _debug(obj,name=None):
             
@@ -215,32 +216,45 @@ class Debugger(QObject,ComponentMixin):
     @pyqtSlot(bool)
     def render(self):
 
+        print("ce: render:+")
         if self.preferences['Reload CQ']:
             reload_cq()
 
         cq_script = self.get_current_script()
         cq_code,module = self.compile_code(cq_script)
 
-        if cq_code is None: return
+        if cq_code is None:
+            print("ce: render:- cq_code is None")
+            return
         
+        print("ce: render: call self._inject_locals")
         cq_objects,injected_names = self._inject_locals(module)
 
         try:
+            print(f"ce: render: call self._exec len(cq_objects)={len(cq_objects)}")
             self._exec(cq_code, module.__dict__, module.__dict__)
 
             #remove the special methods
+            print(f"ce: render: call self._cleanup_locals len(cq_objects)={len(cq_objects)}")
             self._cleanup_locals(module,injected_names)
                         
             #collect all CQ objects if no explicit show_object was called
             if len(cq_objects) == 0:
+                print("ce: render: len(cq_objects)==0 call find_cq_objects")
                 cq_objects = find_cq_objects(module.__dict__)
+
+            print(f"ce: render: call sigRendered.emit(cq_objects) len(cq_objects)=={len(cq_objects)}")
             self.sigRendered.emit(cq_objects)
+            print(f"ce: render: call sigTraceback.emit(None, cq_script) len(cq_objects)=={len(cq_objects)}")
             self.sigTraceback.emit(None,
                                    cq_script)
+            print(f"ce: render: call sigLocals.emit(module.__dict__) len(cq_objects)=={len(cq_objects)}")
             self.sigLocals.emit(module.__dict__)
         except Exception:
+            print(f"ce: render: call sigTraceback.emit(sys.exc_infi(), cq_scrupt) len(cq_objects)=={len(cq_objects)}")
             self.sigTraceback.emit(sys.exc_info(),
                                    cq_script)
+        print("ce: render:-")
 
     @pyqtSlot(bool)
     def debug(self,value):

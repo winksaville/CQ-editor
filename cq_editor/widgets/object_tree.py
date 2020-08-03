@@ -241,17 +241,24 @@ class ObjectTree(QWidget,ComponentMixin):
     @pyqtSlot(dict)
     def addObjects(self,objects,clean=False,root=None):
 
+        print(f"ce: object_tree.addObjects:+ root={root} len(objects)={len(objects)}")
+
         if root is None:
             root = self.CQ
+        print(f"ce: object_tree.addObjects: root={root} columnCount={root.columnCount()} children={root.childCount()} len(objects)={len(objects)}")
 
         request_fit_view = True if root.childCount() == 0 else False
         preserve_props = self.preferences['Preserve properties on reload']
         
         if preserve_props:
+            print(f"ce: object_tree.addObjects: call preserve_props root={root} columnCount={root.columnCount()} children={root.childCount()} len(objects)={len(objects)}")
             current_props = self._current_properties()
 
+        print(f"ce: object_tree.addObjects: before removeObjects clean={clean} pref['clear']={self.preferences['Clear all before each run']} root.childCount={root.childCount()}")
         if clean or self.preferences['Clear all before each run']:
+            print(f"ce: object_tree.addObjects: call removeObjects root={root} columnCount={root.columnCount()} children={root.childCount()} len(objects)={len(objects)}")
             self.removeObjects()
+        print(f"ce: object_tree.addObjects: after removeObjects root.childCount={root.childCount()}")
 
         ais_list = []
 
@@ -259,6 +266,7 @@ class ObjectTree(QWidget,ComponentMixin):
         objects_f = {k:v for k,v in objects.items() if not is_obj_empty(v.shape)}
 
         for name,obj in objects_f.items():
+            print(f"ce: object_tree.addObjects: name={name}")
             ais,shape_display = make_AIS(obj.shape,obj.options)
             
             child = ObjectTreeItem(name,
@@ -268,22 +276,30 @@ class ObjectTree(QWidget,ComponentMixin):
                                    sig=self.sigObjectPropertiesChanged)
             
             if preserve_props and name in current_props:
+                print(f"ce: object_tree.addObjects: self._restore_properties {name}")
                 self._restore_properties(child,current_props)
             
             if child.properties['Visible']:
+                print(f"ce: object_tree.addObjects: child.properties['Visible'] {name}")
                 ais_list.append(ais)
             
+            print(f"ce: object_tree.addObjects: root.addChild {name}")
             root.addChild(child)
 
         if request_fit_view:
+            print(f"ce: object_tree.addObjects: sigObjectsAdded[ais_list,True]")
             self.sigObjectsAdded[list,bool].emit(ais_list,True)
         else:
+            print(f"ce: object_tree.addObjects: sigObjectsAdded[ais_list]")
             self.sigObjectsAdded[list].emit(ais_list)
+
+        print(f"ce: object_tree.addObjects:- root={root} columnCount={root.columnCount()} children={root.childCount()} len(objects)={len(objects)}")
 
     @pyqtSlot(object,str,object)
     def addObject(self,obj,name='',options={}):
 
         root = self.CQ
+        print(f"ce: object_tree.addObject:+ root={root} columnCount={root.columnCount()} children={root.childCount()}")
 
         ais,shape_display = make_AIS(obj, options)
 
@@ -294,6 +310,7 @@ class ObjectTree(QWidget,ComponentMixin):
                                      sig=self.sigObjectPropertiesChanged))
 
         self.sigObjectsAdded.emit([ais])
+        print(f"ce: object_tree.addObject:- root={root} columnCount={root.columnCount()} children={root.childCount()}")
 
     @pyqtSlot(list)
     @pyqtSlot()
